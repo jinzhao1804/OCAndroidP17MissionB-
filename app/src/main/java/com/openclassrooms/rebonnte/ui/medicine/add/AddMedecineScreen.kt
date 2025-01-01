@@ -22,6 +22,8 @@ fun AddMedecineScreen(
     var name by remember { mutableStateOf("") }
     var stock by remember { mutableStateOf("") }
     var aisle by remember { mutableStateOf(Aisle("")) }
+    var textFieldValue by remember { mutableStateOf(aisle.name) }
+
 
     Column(
         modifier = Modifier
@@ -55,9 +57,9 @@ fun AddMedecineScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         TextField(
-            value = aisle.name,
+            value = textFieldValue,
             onValueChange = { newName ->
-                aisle.name = newName // Directly update the name property
+                textFieldValue = newName // Directly update the name property
             },
             label = { Text("Aisle Name") },
             modifier = Modifier.fillMaxWidth()

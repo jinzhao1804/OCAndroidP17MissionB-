@@ -25,6 +25,10 @@ fun MedicineScreen(viewModel: MedicineViewModel = viewModel()) {
     val medicines by viewModel.medicines.collectAsState(initial = emptyList())
     val context = LocalContext.current
 
+    // Fetch aisles when the composable is first launched
+    LaunchedEffect(Unit) {
+        viewModel.getAllMedicines()
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize()
     ) {
