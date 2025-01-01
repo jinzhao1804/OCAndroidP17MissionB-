@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -35,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.openclassrooms.rebonnte.MainActivity
 import com.openclassrooms.rebonnte.domain.model.History
 import com.openclassrooms.rebonnte.ui.medicine.edit.EditMedicineDetailScreen
@@ -49,14 +52,20 @@ class MedicineDetailActivity : ComponentActivity() {
 
         setContent {
             RebonnteTheme {
-                MedicineDetailScreen(name, viewModel)
+                val navController = rememberNavController()
+
+                MedicineDetailScreen(name, viewModel, navController)
             }
         }
     }
 }
 
 @Composable
-fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
+fun MedicineDetailScreen(
+    name: String,
+    viewModel: MedicineViewModel,
+    navController: NavController
+) {
     val medicines by viewModel.medicines.collectAsState(initial = emptyList())
     val medicine = medicines.find { it.name == name } ?: return
     var stock by remember { mutableStateOf(medicine.stock) }
@@ -80,13 +89,28 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
             } else {
                 // Show Detail Screen
                 Column {
-                    Button(
-                        onClick = { isEditing = true }, // Enter edit mode
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Text("Edit Medicine")
+                    Row {
+                        Button(
+                            onClick = { isEditing = true }, // Enter edit mode
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                        ) {
+                            Text("Edit Medicine")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                viewModel.deleteMedicine(medicine.documentId)
+                                navController.navigate("medicine") // Navigate to medicine list
+                                navController.popBackStack()
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                        ) {
+                            Text("Delete")
+                        }
                     }
                     Spacer(modifier = Modifier.padding(16.dp))
                     TextField(
@@ -160,10 +184,6 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
                         }
                     }
                 }
-
-                // Edit Button
-                Spacer(modifier = Modifier.height(16.dp))
-
             }
         }
     }

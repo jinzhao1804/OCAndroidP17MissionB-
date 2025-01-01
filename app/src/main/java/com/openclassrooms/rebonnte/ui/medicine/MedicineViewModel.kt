@@ -19,6 +19,19 @@ class MedicineViewModel : ViewModel() {
         getAllMedicines()
     }
 
+    fun deleteMedicine(documentId: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteMedicine(documentId)
+                // Refresh the list of medicines
+                _medicines.value = repository.getAllMedicines().toMutableList()
+                println("Medicine deleted and list refreshed") // Debugging
+            } catch (e: Exception) {
+                println("Failed to delete medicine: ${e.message}")
+            }
+        }
+    }
+
     fun addNewMedecine(name: String, stock: Int, nameAisle: Aisle) {
 
     repository.addNewMedicine(name, stock, nameAisle)

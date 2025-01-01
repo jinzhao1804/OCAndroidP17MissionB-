@@ -12,6 +12,25 @@ class MedicineRepository {
     private val medicinesCollection = firestore.collection("medicines")
 
 
+    suspend fun deleteMedicine(documentId: String) {
+        try {
+            // Check if the document ID is valid
+            if (documentId.isBlank()) {
+                println("Document ID is empty. Cannot delete medicine.")
+                return
+            }
+
+            // Delete the document from Firestore
+            medicinesCollection.document(documentId)
+                .delete()
+                .await()
+
+            println("Medicine deleted successfully!")
+        } catch (e: Exception) {
+            println("Failed to delete medicine: ${e.message}")
+        }
+    }
+
     fun addNewMedicine(
         name: String,
         stock: Int,

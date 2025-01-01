@@ -72,6 +72,7 @@ import com.openclassrooms.rebonnte.ui.aisle.AisleScreen
 import com.openclassrooms.rebonnte.ui.aisle.AisleViewModel
 import com.openclassrooms.rebonnte.ui.connect.SignInScreen
 import com.openclassrooms.rebonnte.ui.connect.SignUpScreen
+import com.openclassrooms.rebonnte.ui.medicine.MedicineDetailScreen
 import com.openclassrooms.rebonnte.ui.medicine.MedicineScreen
 import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 import com.openclassrooms.rebonnte.ui.medicine.add.AddMedecineScreen
@@ -273,6 +274,10 @@ fun MyApp() {
                 composable("signin") { SignInScreen(navController) }
                 composable("signup") { SignUpScreen(navController) }
                 composable("main") { MyApp() }
+                composable("medicineDetail/{name}") { backStackEntry ->
+                    val name = backStackEntry.arguments?.getString("name") ?: ""
+                    MedicineDetailScreen(name, medicineViewModel, navController)
+                }
 
 
             }
