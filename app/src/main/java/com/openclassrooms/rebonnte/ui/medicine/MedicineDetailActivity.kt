@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.openclassrooms.rebonnte.MainActivity
 import com.openclassrooms.rebonnte.domain.model.History
+import com.openclassrooms.rebonnte.ui.medicine.edit.EditMedicineDetailScreen
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import java.util.Date
 
@@ -58,6 +60,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
     val medicines by viewModel.medicines.collectAsState(initial = emptyList())
     val medicine = medicines.find { it.name == name } ?: return
     var stock by remember { mutableStateOf(medicine.stock) }
+    var isEditing by remember { mutableStateOf(false) } // State to toggle edit mode
 
     Scaffold { paddingValues ->
         Column(
@@ -65,75 +68,102 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            TextField(
-                value = medicine.name,
-                onValueChange = {},
-                label = { Text("Name") },
-                enabled = false,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            TextField(
-                value = medicine.nameAisle.name,
-                onValueChange = {},
-                label = { Text("Aisle") },
-                enabled = false,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                IconButton(onClick = {
-                    if (stock > 0) {
-                        medicines[medicines.size].histories.toMutableList().add(
-                            History(
-                                medicine.name,
-                                "efeza56f1e65f",
-                                Date().toString(),
-                                "Updated medicine details"
-                            )
-                        )
-                        stock--
+            if (isEditing) {
+                // Show Edit Screen
+                EditMedicineDetailScreen(
+                    medicine = medicine,
+                    onSave = { updatedMedicine ->
+                        viewModel.updateMedicine(updatedMedicine)
+                        isEditing = false // Exit edit mode after saving
                     }
-                }) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "Minus One"
-                    )
-                }
-                TextField(
-                    value = stock.toString(),
-                    onValueChange = {},
-                    label = { Text("Stock") },
-                    enabled = false,
-                    modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = {
-                    medicines[medicines.size].histories.toMutableList().add(
-                        History(
-                            medicine.name,
-                            "efeza56f1e65f",
-                            Date().toString(),
-                            "Updated medicine details"
+            } else {
+                // Show Detail Screen
+                Column {
+                    Button(
+                        onClick = { isEditing = true }, // Enter edit mode
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text("Edit Medicine")
+                    }
+                    Spacer(modifier = Modifier.padding(16.dp))
+                    TextField(
+                        value = medicine.name,
+                        onValueChange = {},
+                        label = { Text("Name") },
+                        enabled = false,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = medicine.nameAisle.name,
+                        onValueChange = {},
+                        label = { Text("Aisle") },
+                        enabled = false,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        IconButton(onClick = {
+                            if (stock > 0) {
+                                medicines[medicines.size].histories.toMutableList().add(
+                                    History(
+                                        medicine.name,
+                                        "efeza56f1e65f",
+                                        Date().toString(),
+                                        "Updated medicine details"
+                                    )
+                                )
+                                stock--
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.KeyboardArrowDown,
+                                contentDescription = "Minus One"
+                            )
+                        }
+                        TextField(
+                            value = stock.toString(),
+                            onValueChange = {},
+                            label = { Text("Stock") },
+                            enabled = false,
+                            modifier = Modifier.weight(1f)
                         )
-                    )
-                    stock++
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowUp,
-                        contentDescription = "Plus One"
-                    )
+                        IconButton(onClick = {
+                            medicines[medicines.size].histories.toMutableList().add(
+                                History(
+                                    medicine.name,
+                                    "efeza56f1e65f",
+                                    Date().toString(),
+                                    "Updated medicine details"
+                                )
+                            )
+                            stock++
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowUp,
+                                contentDescription = "Plus One"
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = "History", style = MaterialTheme.typography.titleLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(medicine.histories) { history ->
+                            HistoryItem(history = history)
+                        }
+                    }
                 }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "History", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(medicine.histories) { history ->
-                    HistoryItem(history = history)
-                }
+
+                // Edit Button
+                Spacer(modifier = Modifier.height(16.dp))
+
             }
         }
     }

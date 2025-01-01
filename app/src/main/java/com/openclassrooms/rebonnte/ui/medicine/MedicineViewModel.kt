@@ -23,6 +23,17 @@ class MedicineViewModel : ViewModel() {
 
     repository.addNewMedicine(name, stock, nameAisle)
 }
+    fun updateMedicine(updatedMedicine: Medicine) {
+        viewModelScope.launch {
+            try {
+                repository.updateMedicine(updatedMedicine)
+                // Refresh the list of medicines
+                _medicines.value = repository.getAllMedicines().toMutableList()
+            } catch (e: Exception) {
+                println("Failed to update medicine: ${e.message}")
+            }
+        }
+    }
 
     /**
      * Fetches all medicines from Firestore and updates the StateFlow.

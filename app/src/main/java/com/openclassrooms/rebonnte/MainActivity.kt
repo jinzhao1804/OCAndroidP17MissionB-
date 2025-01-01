@@ -272,6 +272,8 @@ fun MyApp() {
                 composable("addMedicine") { AddMedecineScreen(navController, medicineViewModel) }
                 composable("signin") { SignInScreen(navController) }
                 composable("signup") { SignUpScreen(navController) }
+                composable("main") { MyApp() }
+
 
             }
         }
