@@ -204,6 +204,10 @@ fun MyApp() {
                                                 onClick = {
                                                     auth.signOut()
                                                     expanded = false
+                                                    navController.navigate("signin") {
+                                                        // Optional: Clear the back stack so the user cannot navigate back to the main screen
+                                                        popUpTo("main") { inclusive = true }
+                                                    }
                                                 },
                                                 text = { Text("Sign out") }
                                             )

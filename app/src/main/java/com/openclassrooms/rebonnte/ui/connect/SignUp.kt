@@ -6,23 +6,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.openclassrooms.rebonnte.domain.model.User
 
 @Composable
 fun SignUpScreen(navController: NavController) {
-    val context = LocalContext.current
     val auth = Firebase.auth
-
-    // State for email, password, and confirm password
+    val firestore = Firebase.firestore
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf("") } // Optional: Add name input
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -31,73 +34,73 @@ fun SignUpScreen(navController: NavController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Email TextField
         TextField(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(modifier = Modifier.height(8.dp))
-
-        // Password TextField
         TextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Confirm Password TextField
-        TextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it },
-            label = { Text("Confirm Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Sign Up Button
-        Button(
-            onClick = {
-                if (email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
-                    if (password == confirmPassword) {
-                        isLoading = true
-                        auth.createUserWithEmailAndPassword(email, password)
-                            .addOnCompleteListener { task ->
-                                isLoading = false
-                                if (task.isSuccessful) {
-                                    // Sign-up successful, navigate to the main app screen
-                                    Toast.makeText(context, "Sign-up successful!", Toast.LENGTH_SHORT).show()
-                                    navController.navigate("main") {
-                                        popUpTo("signup") { inclusive = true }
-                                    }
-                                } else {
-                                    // Sign-up failed
-                                    Toast.makeText(context, "Sign-up failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                    } else {
-                        Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                }
-            },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+            visualTransformation = PasswordVisualTransformation()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        TextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") }, // Optional: Add name input
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = {
+            if (email.isNotEmpty() && password.isNotEmpty()) {
+                auth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val user = auth.currentUser
+                            if (user != null) {
+                                // Create a User object
+                                val userData = User(
+                                    id = user.uid,
+                                    email = email,
+                                    createdAt = Timestamp.now(),
+                                    name = name // Optional: Add name
+                                )
+                                // Save the User object to Firestore
+                                firestore.collection("users")
+                                    .document(user.uid)
+                                    .set(userData)
+                                    .addOnSuccessListener {
+                                        // Navigate to the main screen
+                                        navController.navigate("main") {
+                                            popUpTo("signup") { inclusive = true }
+                                        }
+                                    }
+                                    .addOnFailureListener { e ->
+                                        errorMessage = "Failed to store user data: ${e.message}"
+                                    }
+                            }
+                        } else {
+                            errorMessage = "Sign up failed: ${task.exception?.message}"
+                        }
+                    }
             } else {
-                Text("Sign Up")
+                errorMessage = "Email and password cannot be empty"
             }
+        }) {
+            Text("Sign Up")
+        }
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = errorMessage!!,
+                color = Color.Red,
+                modifier = Modifier.padding(8.dp)
+            )
         }
     }
 }
