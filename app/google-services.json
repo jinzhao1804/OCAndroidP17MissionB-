@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "79696614161",
+    "project_id": "ocandroidp17gestionstockmedic",
+    "storage_bucket": "ocandroidp17gestionstockmedic.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79696614161:android:aa2594480b0bbf1f38b2b0",
+        "android_client_info": {
+          "package_name": "com.openclassrooms.rebonnte"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPvWrROriujCk2AIFjpO_GcpGBByfZICE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

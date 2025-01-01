@@ -65,10 +65,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.openclassrooms.rebonnte.ui.aisle.AisleScreen
 import com.openclassrooms.rebonnte.ui.aisle.AisleViewModel
+import com.openclassrooms.rebonnte.ui.connect.SignInScreen
+import com.openclassrooms.rebonnte.ui.connect.SignUpScreen
 import com.openclassrooms.rebonnte.ui.medicine.MedicineScreen
 import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
+import com.openclassrooms.rebonnte.ui.medicine.add.AddMedecineScreen
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 
 class MainActivity : ComponentActivity() {
@@ -79,7 +84,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         mainActivity = this
         setContent {
-            MyApp()
+            RebonnteTheme {
+                val navController = rememberNavController()
+                val auth = Firebase.auth
+
+                // Check if the user is already signed in
+                val currentUser = auth.currentUser
+                NavHost(
+                    navController = navController,
+                    startDestination = if (currentUser != null) "main" else "signin"
+                ) {
+                    composable("signin") { SignInScreen(navController) }
+                    composable("signup") { SignUpScreen(navController) }
+                    composable("main") { MyApp() }
+                }
+            }
         }
         startBroadcastReceiver()
     }
@@ -87,7 +106,6 @@ class MainActivity : ComponentActivity() {
     private fun startMyBroadcast() {
         val intent = Intent("com.rebonnte.ACTION_UPDATE")
         sendBroadcast(intent)
-        startBroadcastReceiver()
     }
 
     private fun startBroadcastReceiver() {
@@ -106,6 +124,10 @@ class MainActivity : ComponentActivity() {
         }, 200)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(myBroadcastReceiver)
+    }
 
     class MyBroadcastReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -126,6 +148,8 @@ fun MyApp() {
     val aisleViewModel: AisleViewModel = viewModel()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val route = navBackStackEntry?.destination?.route
+    val auth = Firebase.auth
+
 
     RebonnteTheme {
         Scaffold(
@@ -176,6 +200,13 @@ fun MyApp() {
                                                 },
                                                 text = { Text("Sort by Stock") }
                                             )
+                                            DropdownMenuItem(
+                                                onClick = {
+                                                    auth.signOut()
+                                                    expanded = false
+                                                },
+                                                text = { Text("Sign out") }
+                                            )
                                         }
                                     }
                                 }
@@ -213,13 +244,14 @@ fun MyApp() {
                 }
             },
             floatingActionButton = {
-                FloatingActionButton(onClick = {
-                    if (route == "medicine") {
-                        medicineViewModel.addRandomMedicine(aisleViewModel.aisles.value)
-                    } else if (route == "aisle") {
-                        aisleViewModel.addRandomAisle()
-                    }
-                }) {
+                FloatingActionButton(
+                    onClick = {
+                        when (route) {
+                            "medicine" -> navController.navigate("addMedicine")
+                            "aisle" -> aisleViewModel.addRandomAisle()
+                        }
+                    },
+                ) {
                     Icon(Icons.Default.Add, contentDescription = "Add")
                 }
             }
@@ -231,6 +263,10 @@ fun MyApp() {
             ) {
                 composable("aisle") { AisleScreen(aisleViewModel) }
                 composable("medicine") { MedicineScreen(medicineViewModel) }
+                composable("addMedicine") { AddMedecineScreen(navController, medicineViewModel) }
+                composable("signin") { SignInScreen(navController) }
+                composable("signup") { SignUpScreen(navController) }
+
             }
         }
     }
