@@ -1,3 +1,5 @@
 package com.openclassrooms.rebonnte.domain.model
 
-class Aisle(var name: String)
+data class Aisle(
+    var name: String = "" // Ensure this matches the Firestore field
+)

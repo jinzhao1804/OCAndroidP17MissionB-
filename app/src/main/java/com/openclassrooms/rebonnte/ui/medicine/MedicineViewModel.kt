@@ -2,6 +2,7 @@ package com.openclassrooms.rebonnte.ui.medicine
 
 import androidx.lifecycle.ViewModel
 import com.openclassrooms.rebonnte.data.MedicineRepository
+import com.openclassrooms.rebonnte.domain.model.Aisle
 import com.openclassrooms.rebonnte.domain.model.Medicine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +30,7 @@ class MedicineViewModel : ViewModel() {
         _medicines.value = currentMedicines
     }
 */
-    fun addNewMedecine(name: String, stock: Int, nameAisle: String) {
+    fun addNewMedecine(name: String, stock: Int, nameAisle: Aisle) {
 
     repository.addNewMedicine(name, stock, nameAisle)
 

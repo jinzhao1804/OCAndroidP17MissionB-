@@ -51,7 +51,7 @@ class AisleDetailActivity : ComponentActivity() {
 @Composable
 fun AisleDetailScreen(name: String, viewModel: MedicineViewModel) {
     val medicines by viewModel.medicines.collectAsState(initial = emptyList())
-    val filteredMedicines = medicines.filter { it.nameAisle == name }
+    val filteredMedicines = medicines.filter { it.nameAisle.name == name }
     val context = LocalContext.current
 
     Scaffold { paddingValues ->

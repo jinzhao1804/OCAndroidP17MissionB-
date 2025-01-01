@@ -1,6 +1,7 @@
 package com.openclassrooms.rebonnte.data
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.openclassrooms.rebonnte.domain.model.Aisle
 import com.openclassrooms.rebonnte.domain.model.Medicine
 
 class MedicineRepository {
@@ -10,7 +11,7 @@ class MedicineRepository {
     fun addNewMedicine(
         name: String,
         stock: Int,
-        nameAisle: String
+        nameAisle: Aisle
     ) {
         val medicine = Medicine(
             name = name,

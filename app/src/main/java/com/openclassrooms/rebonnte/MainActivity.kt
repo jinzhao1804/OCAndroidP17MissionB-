@@ -67,6 +67,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.openclassrooms.rebonnte.data.AisleRepository
 import com.openclassrooms.rebonnte.ui.aisle.AisleScreen
 import com.openclassrooms.rebonnte.ui.aisle.AisleViewModel
 import com.openclassrooms.rebonnte.ui.connect.SignInScreen
@@ -143,9 +144,10 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyApp() {
+    val repository = AisleRepository()
     val navController = rememberNavController()
     val medicineViewModel: MedicineViewModel = viewModel()
-    val aisleViewModel: AisleViewModel = viewModel()
+    val aisleViewModel = AisleViewModel(repository)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val route = navBackStackEntry?.destination?.route
     val auth = Firebase.auth
@@ -252,7 +254,7 @@ fun MyApp() {
                     onClick = {
                         when (route) {
                             "medicine" -> navController.navigate("addMedicine")
-                            "aisle" -> aisleViewModel.addRandomAisle()
+                            "aisle" -> aisleViewModel.addNewAisle()
                         }
                     },
                 ) {

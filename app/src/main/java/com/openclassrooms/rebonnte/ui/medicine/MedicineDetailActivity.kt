@@ -74,7 +74,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             TextField(
-                value = medicine.nameAisle,
+                value = medicine.nameAisle.name,
                 onValueChange = {},
                 label = { Text("Aisle") },
                 enabled = false,

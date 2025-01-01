@@ -10,6 +10,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.room.util.copy
+import com.openclassrooms.rebonnte.domain.model.Aisle
 import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 
 @Composable
@@ -19,7 +21,7 @@ fun AddMedecineScreen(
     // State variables to hold the input values
     var name by remember { mutableStateOf("") }
     var stock by remember { mutableStateOf("") }
-    var nameAisle by remember { mutableStateOf("") }
+    var aisle by remember { mutableStateOf(Aisle("")) }
 
     Column(
         modifier = Modifier
@@ -52,28 +54,27 @@ fun AddMedecineScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Aisle Name TextField
         TextField(
-            value = nameAisle,
-            onValueChange = { nameAisle = it },
+            value = aisle.name,
+            onValueChange = { newName ->
+                aisle.name = newName // Directly update the name property
+            },
             label = { Text("Aisle Name") },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Save Button
         Button(
             onClick = {
                 // Handle the save action here
-                val stockValue = stock.toIntOrNull() ?: 0
-                viewModel.addNewMedecine(name, stockValue, nameAisle)
-                navController.popBackStack()
-
+                val stockValue = stock.toIntOrNull() ?: 0 // Convert stock to Int, default to 0 if invalid
+                viewModel.addNewMedecine(name, stockValue, aisle) // Call ViewModel function
+                navController.popBackStack() // Navigate back
             },
-            modifier = Modifier.align(Alignment.End)
+            modifier = Modifier.align(Alignment.End) // Align the button to the end of its container
         ) {
-            Text("Save")
+            Text("Save") // Button text
         }
     }
 }
