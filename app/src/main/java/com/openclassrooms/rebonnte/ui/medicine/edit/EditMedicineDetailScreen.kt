@@ -22,6 +22,15 @@ import com.openclassrooms.rebonnte.domain.model.User
 import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 import java.util.Date
 
+fun isValidAisleName(aisle: String): Boolean {
+    return aisle.isNotBlank() && aisle.matches(Regex("^[a-zA-Z0-9 ]+\$"))
+}
+fun isValidStock(stock: String): Boolean {
+    return stock.toIntOrNull()?.let { it >= 0 } ?: false
+}
+fun isValidMedicineName(name: String): Boolean {
+    return name.isNotBlank() && name.matches(Regex("^[a-zA-Z0-9 ]+\$"))
+}
 @Composable
 fun EditMedicineDetailScreen(
     medicine: Medicine,
@@ -35,6 +44,10 @@ fun EditMedicineDetailScreen(
 
     var userId by remember { mutableStateOf("unknown") }
     var userEmail by remember { mutableStateOf("unknown") }
+
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var stockError by remember { mutableStateOf<String?>(null) }
+    var aisleError by remember { mutableStateOf<String?>(null) }
 
     // Fetch user data from Firestore
     LaunchedEffect(Unit) {
@@ -65,19 +78,33 @@ fun EditMedicineDetailScreen(
             // Edit Medicine Name
             TextField(
                 value = editedName,
-                onValueChange = { editedName = it },
+                onValueChange = {
+                    editedName = it
+                    nameError = if (isValidMedicineName(it)) null else "Invalid medicine name"
+                },
                 label = { Text("Name") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                isError = nameError != null
             )
+            if (nameError != null) {
+                Text(text = nameError!!, color = Color.Red)
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             // Edit Aisle Name
             TextField(
                 value = editedAisle,
-                onValueChange = { editedAisle = it },
+                onValueChange = {
+                    editedAisle = it
+                    aisleError = if (isValidAisleName(it)) null else "Invalid aisle name"
+                },
                 label = { Text("Aisle") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                isError = aisleError != null
             )
+            if (aisleError != null) {
+                Text(text = aisleError!!, color = Color.Red)
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             // Edit Stock
@@ -89,6 +116,7 @@ fun EditMedicineDetailScreen(
                     val currentStock = editedStock.toIntOrNull() ?: 0
                     if (currentStock > 0) {
                         editedStock = (currentStock - 1).toString()
+                        stockError = null
                     }
                 }) {
                     Icon(
@@ -101,14 +129,17 @@ fun EditMedicineDetailScreen(
                     onValueChange = { newValue ->
                         if (newValue.isEmpty() || newValue.toIntOrNull()?.let { it >= 0 } == true) {
                             editedStock = newValue
+                            stockError = if (isValidStock(newValue)) null else "Invalid stock value"
                         }
                     },
                     label = { Text("Stock") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    isError = stockError != null
                 )
                 IconButton(onClick = {
                     val currentStock = editedStock.toIntOrNull() ?: 0
                     editedStock = (currentStock + 1).toString()
+                    stockError = null
                 }) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowUp,
@@ -116,21 +147,34 @@ fun EditMedicineDetailScreen(
                     )
                 }
             }
+            if (stockError != null) {
+                Text(text = stockError!!, color = Color.Red)
+            }
             Spacer(modifier = Modifier.height(16.dp))
 
             // Save Button
             Button(
                 onClick = {
-                    val updatedMedicine = createUpdatedMedicine(
-                        medicine,
-                        editedName,
-                        editedStock,
-                        editedAisle,
-                        userId,
-                        userEmail
-                    )
-                    viewModel.updateMedicine(updatedMedicine)
-                    onSave(updatedMedicine)
+                    val isNameValid = isValidMedicineName(editedName)
+                    val isStockValid = isValidStock(editedStock)
+                    val isAisleValid = isValidAisleName(editedAisle)
+
+                    nameError = if (isNameValid) null else "Invalid medicine name"
+                    stockError = if (isStockValid) null else "Invalid stock value"
+                    aisleError = if (isAisleValid) null else "Invalid aisle name"
+
+                    if (isNameValid && isStockValid && isAisleValid) {
+                        val updatedMedicine = createUpdatedMedicine(
+                            medicine,
+                            editedName,
+                            editedStock,
+                            editedAisle,
+                            userId,
+                            userEmail
+                        )
+                        viewModel.updateMedicine(updatedMedicine)
+                        onSave(updatedMedicine)
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -141,7 +185,6 @@ fun EditMedicineDetailScreen(
         }
     }
 }
-
 private fun createUpdatedMedicine(
     medicine: Medicine,
     editedName: String,

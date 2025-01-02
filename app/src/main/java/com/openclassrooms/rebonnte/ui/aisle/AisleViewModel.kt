@@ -29,7 +29,7 @@ class AisleViewModel(
     fun addNewAisle() {
 
         val currentAisles = _aisles.value.toMutableList()
-        val newAisle = Aisle("Aisle ${currentAisles.size + 1}")
+        val newAisle = Aisle("ai${currentAisles.size + 1}")
 
         currentAisles.add(newAisle)
         _aisles.value = currentAisles
