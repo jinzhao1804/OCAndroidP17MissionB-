@@ -4,15 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.openclassrooms.rebonnte.data.MedicineRepository
 import com.openclassrooms.rebonnte.domain.model.Aisle
 import com.openclassrooms.rebonnte.domain.model.Medicine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.Locale
 
 class MedicineViewModel : ViewModel() {
+
+    private val db = FirebaseFirestore.getInstance()
     var _medicines = MutableStateFlow<MutableList<Medicine>>(mutableListOf())
     val medicines: StateFlow<List<Medicine>> get() = _medicines
     val repository = MedicineRepository()
@@ -80,20 +85,37 @@ class MedicineViewModel : ViewModel() {
         _medicines.value = filteredMedicines
     }
 
-    fun sortByNone() {
-        _medicines.value = medicines.value.toMutableList() // Pas de tri
-    }
-
+    // Function to sort medicines by name
     fun sortByName() {
-        val currentMedicines = ArrayList(medicines.value)
-        currentMedicines.sortWith(Comparator.comparing(Medicine::name))
-        _medicines.value = currentMedicines
+        viewModelScope.launch {
+            try {
+                _medicines.value = repository.getMedicinesSortedByName().toMutableList()
+            } catch (e: Exception) {
+                println("Failed to sort medicines by name: ${e.message}")
+            }
+        }
     }
 
+    // Function to sort medicines by stock
     fun sortByStock() {
-        val currentMedicines = ArrayList(medicines.value)
-        currentMedicines.sortWith(Comparator.comparingInt(Medicine::stock))
-        _medicines.value = currentMedicines
+        viewModelScope.launch {
+            try {
+                _medicines.value = repository.getMedicinesSortedByStock().toMutableList()
+            } catch (e: Exception) {
+                println("Failed to sort medicines by stock: ${e.message}")
+            }
+        }
+    }
+
+    // Function to load medicines in default order (no sorting)
+    fun sortByNone() {
+        viewModelScope.launch {
+            try {
+                _medicines.value = repository.getAllMedicines().toMutableList()
+            } catch (e: Exception) {
+                println("Failed to load medicines: ${e.message}")
+            }
+        }
     }
 }
 

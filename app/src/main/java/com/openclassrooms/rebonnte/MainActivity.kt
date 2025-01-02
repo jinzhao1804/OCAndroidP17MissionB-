@@ -67,6 +67,7 @@ import com.openclassrooms.rebonnte.ui.medicine.MedicineScreen
 import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 import com.openclassrooms.rebonnte.ui.medicine.add.AddMedecineScreen
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -135,6 +136,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyApp() {
+    val coroutineScope = rememberCoroutineScope()
     val repository = AisleRepository()
     val navController = rememberNavController()
     val medicineViewModel: MedicineViewModel = viewModel()
@@ -174,22 +176,28 @@ fun MyApp() {
                                         ) {
                                             DropdownMenuItem(
                                                 onClick = {
-                                                    medicineViewModel.sortByNone()
-                                                    expanded = false
+                                                    coroutineScope.launch {
+                                                        medicineViewModel.sortByNone()
+                                                        expanded = false
+                                                    }
                                                 },
                                                 text = { Text("Sort by None") }
                                             )
                                             DropdownMenuItem(
                                                 onClick = {
-                                                    medicineViewModel.sortByName()
-                                                    expanded = false
+                                                    coroutineScope.launch {
+                                                        medicineViewModel.sortByName()
+                                                        expanded = false
+                                                    }
                                                 },
                                                 text = { Text("Sort by Name") }
                                             )
                                             DropdownMenuItem(
                                                 onClick = {
-                                                    medicineViewModel.sortByStock()
-                                                    expanded = false
+                                                    coroutineScope.launch {
+                                                        medicineViewModel.sortByStock()
+                                                        expanded = false
+                                                    }
                                                 },
                                                 text = { Text("Sort by Stock") }
                                             )
