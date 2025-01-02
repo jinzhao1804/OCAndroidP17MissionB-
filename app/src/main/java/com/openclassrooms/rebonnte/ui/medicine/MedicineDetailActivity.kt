@@ -1,5 +1,6 @@
 package com.openclassrooms.rebonnte.ui.medicine
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -37,14 +38,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.openclassrooms.rebonnte.MainActivity
 import com.openclassrooms.rebonnte.domain.model.History
 import com.openclassrooms.rebonnte.domain.model.User
-import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import java.util.Date
 
@@ -56,9 +54,12 @@ class MedicineDetailActivity : ComponentActivity() {
 
         setContent {
             RebonnteTheme {
-                val navController = rememberNavController()
-
-                MedicineDetailScreen(name, viewModel, navController)
+                MedicineDetailScreen(name, viewModel) { // Remove NavController
+                    // Navigate back to MainActivity
+                    val intent = Intent(this@MedicineDetailActivity, MainActivity::class.java)
+                    startActivity(intent)
+                    finish() // Close the current activity
+                }
             }
         }
     }
@@ -68,7 +69,7 @@ class MedicineDetailActivity : ComponentActivity() {
 fun MedicineDetailScreen(
     name: String,
     viewModel: MedicineViewModel,
-    navController: NavController
+    onNavigateBack: () -> Unit // Callback for navigation
 ) {
     val medicines by viewModel.medicines.collectAsState(initial = emptyList())
     val medicine = medicines.find { it.name == name } ?: return
@@ -112,6 +113,8 @@ fun MedicineDetailScreen(
                     onSave = { updatedMedicine ->
                         viewModel.updateMedicine(updatedMedicine)
                         isEditing = false // Exit edit mode after saving
+                        onNavigateBack() // Navigate back to MainActivity
+
                     }
                 )
             } else {
@@ -130,8 +133,8 @@ fun MedicineDetailScreen(
                         Button(
                             onClick = {
                                 viewModel.deleteMedicine(medicine.documentId)
-                                navController.navigate("medicine") // Navigate to medicine list
-                                navController.popBackStack()
+                                onNavigateBack() // Navigate back to MainActivity
+
                             },
                             modifier = Modifier
                                 .weight(1f)

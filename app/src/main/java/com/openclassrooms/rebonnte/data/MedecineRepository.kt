@@ -141,9 +141,27 @@ class MedicineRepository {
                 return
             }
 
+            // Query the "medicines" collection to find the document with the matching documentId field
+            val querySnapshot = medicinesCollection
+                .whereEqualTo("documentId", medicine.documentId) // Match the documentId field
+                .get()
+                .await()
+
+            // Check if the document exists
+            if (querySnapshot.isEmpty) {
+                println("Document with documentId ${medicine.documentId} does not exist. Cannot update medicine.")
+                return
+            }
+
+            // Get the Firestore document ID (e.g., jBpHxaIhE6Rjo5LrATXG)
+            val firestoreDocumentId = querySnapshot.documents.firstOrNull()?.id
+            if (firestoreDocumentId.isNullOrBlank()) {
+                println("Firestore document ID is null or blank. Cannot update medicine.")
+                return
+            }
+
             // Convert the Medicine object to a Map
             val medicineData = hashMapOf(
-                "documentId" to medicine.documentId, // Include the documentId
                 "name" to medicine.name,
                 "stock" to medicine.stock,
                 "nameAisle" to mapOf("name" to medicine.nameAisle.name),
@@ -152,14 +170,17 @@ class MedicineRepository {
                         "medicineName" to history.medicineName,
                         "userId" to history.userId,
                         "date" to history.date,
-                        "details" to history.details
+                        "details" to history.details,
+                        "userEmail" to history.userEmail
                     )
                 }
             )
 
-            // Update the document in Firestore using the document ID
-            medicinesCollection.document(medicine.documentId)
-                .set(medicineData)
+            println("Updating document with Firestore ID: $firestoreDocumentId")
+
+            // Update the document in Firestore using the Firestore document ID
+            medicinesCollection.document(firestoreDocumentId)
+                .update(medicineData as Map<String, Any>)
                 .await()
 
             println("Medicine updated successfully!")
