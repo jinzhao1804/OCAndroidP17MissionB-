@@ -10,10 +10,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -23,19 +25,29 @@ import com.openclassrooms.rebonnte.domain.model.Medicine
 @Composable
 fun MedicineScreen(viewModel: MedicineViewModel = viewModel()) {
     val medicines by viewModel.medicines.collectAsState(initial = emptyList())
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     val context = LocalContext.current
 
-    // Fetch aisles when the composable is first launched
     LaunchedEffect(Unit) {
         viewModel.getAllMedicines()
     }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        items(medicines) { medicine ->
-            MedicineItem(medicine = medicine, onClick = {
-                startDetailActivity(context, medicine.name)
-            })
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (error != null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(text = error!!, color = MaterialTheme.colorScheme.error)
+        }
+    } else {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(medicines) { medicine ->
+                MedicineItem(medicine = medicine, onClick = {
+                    startDetailActivity(context, medicine.name)
+                })
+            }
         }
     }
 }

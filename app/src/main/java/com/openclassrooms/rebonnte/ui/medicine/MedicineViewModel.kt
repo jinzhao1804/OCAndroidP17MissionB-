@@ -3,75 +3,105 @@ package com.openclassrooms.rebonnte.ui.medicine
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.openclassrooms.rebonnte.data.MedicineRepository
 import com.openclassrooms.rebonnte.domain.model.Aisle
 import com.openclassrooms.rebonnte.domain.model.Medicine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.util.Locale
 
 class MedicineViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
-    var _medicines = MutableStateFlow<MutableList<Medicine>>(mutableListOf())
-    val medicines: StateFlow<List<Medicine>> get() = _medicines
-    val repository = MedicineRepository()
+    private val repository = MedicineRepository()
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 
+    private val _medicines = MutableStateFlow<MutableList<Medicine>>(mutableListOf())
+    val medicines: StateFlow<List<Medicine>> get() = _medicines
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> get() = _isLoading
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> get() = _error
 
     init {
         getAllMedicines()
     }
 
-    fun deleteMedicine(documentId: String) {
-        viewModelScope.launch {
-            try {
-                repository.deleteMedicine(documentId)
-                // Refresh the list of medicines
-                _medicines.value = repository.getAllMedicines().toMutableList()
-                println("Medicine deleted and list refreshed") // Debugging
-            } catch (e: Exception) {
-                println("Failed to delete medicine: ${e.message}")
-            }
-        }
-    }
-
-
-
-    fun addNewMedecine(name: String, stock: Int, nameAisle: Aisle) {
-
-    repository.addNewMedicine(name, stock, nameAisle)
-}
-    fun updateMedicine(updatedMedicine: Medicine) {
-        viewModelScope.launch {
-            try {
-                repository.updateMedicine(updatedMedicine)
-                // Refresh the list of medicines
-                _medicines.value = repository.getAllMedicines().toMutableList()
-            } catch (e: Exception) {
-                println("Failed to update medicine: ${e.message}")
-            }
-        }
+    /**
+     * Sets an error message manually.
+     *
+     * @param message The error message to set.
+     */
+    fun setError(message: String) {
+        _error.value = message
     }
 
     /**
-     * Fetches all medicines from Firestore and updates the StateFlow.
+     * Clears the current error message.
      */
-    fun getAllMedicines() {
+    fun clearError() {
+        _error.value = null
+    }
+
+    fun deleteMedicine(documentId: String) {
         viewModelScope.launch {
             try {
+                _isLoading.value = true
+                println("Deleting medicine with documentId: $documentId") // Debugging
+                repository.deleteMedicine(documentId)
                 _medicines.value = repository.getAllMedicines().toMutableList()
-
             } catch (e: Exception) {
-                println("Failed to fetch medicines: ${e.message}") // Debugging
+                _error.value = "Failed to delete medicine: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
+
+    fun addNewMedicine(name: String, stock: Int, nameAisle: Aisle) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                repository.addNewMedicine(name, stock, nameAisle)
+            } catch (e: Exception) {
+                _error.value = "Failed to add medicine: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun updateMedicine(updatedMedicine: Medicine) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                repository.updateMedicine(updatedMedicine)
+                _medicines.value = repository.getAllMedicines().toMutableList()
+            } catch (e: Exception) {
+                _error.value = "Failed to update medicine: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun getAllMedicines() {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _medicines.value = repository.getAllMedicines().toMutableList()
+            } catch (e: Exception) {
+                _error.value = "Failed to fetch medicines: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     fun filterByName(name: String) {
         val currentMedicines: List<Medicine> = medicines.value
         val filteredMedicines: MutableList<Medicine> = ArrayList()
@@ -85,37 +115,42 @@ class MedicineViewModel : ViewModel() {
         _medicines.value = filteredMedicines
     }
 
-    // Function to sort medicines by name
     fun sortByName() {
         viewModelScope.launch {
             try {
+                _isLoading.value = true
                 _medicines.value = repository.getMedicinesSortedByName().toMutableList()
             } catch (e: Exception) {
-                println("Failed to sort medicines by name: ${e.message}")
+                _error.value = "Failed to sort medicines by name: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    // Function to sort medicines by stock
     fun sortByStock() {
         viewModelScope.launch {
             try {
+                _isLoading.value = true
                 _medicines.value = repository.getMedicinesSortedByStock().toMutableList()
             } catch (e: Exception) {
-                println("Failed to sort medicines by stock: ${e.message}")
+                _error.value = "Failed to sort medicines by stock: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    // Function to load medicines in default order (no sorting)
     fun sortByNone() {
         viewModelScope.launch {
             try {
+                _isLoading.value = true
                 _medicines.value = repository.getAllMedicines().toMutableList()
             } catch (e: Exception) {
-                println("Failed to load medicines: ${e.message}")
+                _error.value = "Failed to load medicines: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 }
-

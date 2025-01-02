@@ -115,7 +115,7 @@ fun AddMedecineScreen(
                 if (isNameValid && isStockValid && isAisleValid) {
                     val stockValue = stock.toIntOrNull() ?: 0
                     val updatedAisle = Aisle(textFieldValue)
-                    viewModel.addNewMedecine(name, stockValue, updatedAisle)
+                    viewModel.addNewMedicine(name, stockValue, updatedAisle)
                     navController.popBackStack()
                 }
             },

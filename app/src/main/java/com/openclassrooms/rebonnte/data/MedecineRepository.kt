@@ -27,13 +27,27 @@ class MedicineRepository {
                 return
             }
 
-            medicinesCollection.document(documentId).delete().await()
+            // Find the Firestore document ID using the provided documentId
+            val firestoreDocumentId = medicinesCollection
+                .whereEqualTo("documentId", documentId)
+                .get()
+                .await()
+                .documents
+                .firstOrNull()
+                ?.id
+                ?: run {
+                    println("Document with documentId $documentId does not exist. Cannot delete medicine.")
+                    return
+                }
+
+            // Delete the document
+            println("Deleting document with Firestore ID: $firestoreDocumentId")
+            medicinesCollection.document(firestoreDocumentId).delete().await()
             println("Medicine deleted successfully!")
         } catch (e: Exception) {
             println("Failed to delete medicine: ${e.message}")
         }
     }
-
     fun addNewMedicine(name: String, stock: Int, nameAisle: Aisle) {
         val documentId = UUID.randomUUID().toString() // Generate a unique documentId
         val medicine = Medicine(

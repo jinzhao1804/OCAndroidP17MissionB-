@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,33 +71,31 @@ class MedicineDetailActivity : ComponentActivity() {
 fun MedicineDetailScreen(
     name: String,
     viewModel: MedicineViewModel,
-    onNavigateBack: () -> Unit // Callback for navigation
+    onNavigateBack: () -> Unit
 ) {
     val medicines by viewModel.medicines.collectAsState(initial = emptyList())
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     val medicine = medicines.find { it.name == name } ?: return
     var stock by remember { mutableStateOf(medicine.stock) }
-    var isEditing by remember { mutableStateOf(false) } // State to toggle edit mode
+    var isEditing by remember { mutableStateOf(false) }
 
     var userId by remember { mutableStateOf("unknown") }
     var userEmail by remember { mutableStateOf("unknown") }
 
-    // Fetch user data from Firestore
     LaunchedEffect(Unit) {
         val db = Firebase.firestore
-
         db.collection("users")
             .get()
             .addOnSuccessListener { result ->
                 for (document in result) {
-                    println("Document ID: ${document.id}, Data: ${document.data}")
                     val user = document.toObject(User::class.java)
                     userId = document.id
                     userEmail = user.email
-                    println("User: ${user.name}, Email: ${user.email}")
                 }
             }
             .addOnFailureListener { exception ->
-                println("Error fetching users: ${exception.message}")
+                viewModel.setError("Error fetching users: ${exception.message}")
             }
     }
 
@@ -105,121 +105,127 @@ fun MedicineDetailScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            if (isEditing) {
-                // Show Edit Screen
-                EditMedicineDetailScreen(
-                    medicine = medicine,
-                    viewModel= MedicineViewModel(),
-                    onSave = { updatedMedicine ->
-                        viewModel.updateMedicine(updatedMedicine)
-                        isEditing = false // Exit edit mode after saving
-                        onNavigateBack() // Navigate back to MainActivity
-
-                    }
-                )
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (error != null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = error!!, color = MaterialTheme.colorScheme.error)
+                }
             } else {
-                // Show Detail Screen
-                Column {
-                    Row {
-                        Button(
-                            onClick = { isEditing = true }, // Enter edit mode
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                        ) {
-                            Text("Edit Medicine")
+                if (isEditing) {
+                    EditMedicineDetailScreen(
+                        medicine = medicine,
+                        viewModel = viewModel,
+                        onSave = { updatedMedicine ->
+                            viewModel.updateMedicine(updatedMedicine)
+                            isEditing = false
+                            onNavigateBack()
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = {
-                                viewModel.deleteMedicine(medicine.documentId)
-                                onNavigateBack() // Navigate back to MainActivity
-
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                        ) {
-                            Text("Delete")
+                    )
+                } else {
+                    Column {
+                        Row {
+                            Button(
+                                onClick = { isEditing = true },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                            ) {
+                                Text("Edit Medicine")
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    viewModel.deleteMedicine(medicine.documentId)
+                                    onNavigateBack()
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                            ) {
+                                Text("Delete")
+                            }
                         }
-                    }
-                    Spacer(modifier = Modifier.padding(16.dp))
-                    TextField(
-                        value = medicine.name,
-                        onValueChange = {},
-                        label = { Text("Name") },
-                        enabled = false,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextField(
-                        value = medicine.nameAisle.name,
-                        onValueChange = {},
-                        label = { Text("Aisle") },
-                        enabled = false,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        IconButton(onClick = {
-                            if (stock > 0) {
+                        Spacer(modifier = Modifier.padding(16.dp))
+                        TextField(
+                            value = medicine.name,
+                            onValueChange = {},
+                            label = { Text("Name") },
+                            enabled = false,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextField(
+                            value = medicine.nameAisle.name,
+                            onValueChange = {},
+                            label = { Text("Aisle") },
+                            enabled = false,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            IconButton(onClick = {
+                                if (stock > 0) {
+                                    val newHistory = History(
+                                        medicineName = medicine.name,
+                                        userId = userId,
+                                        date = Date().toString(),
+                                        details = "Decreased stock to ${stock - 1}",
+                                        userEmail = userEmail
+                                    )
+                                    val updatedMedicine = medicine.copy(
+                                        stock = stock - 1,
+                                        histories = medicine.histories + newHistory
+                                    )
+                                    viewModel.updateMedicine(updatedMedicine)
+                                    stock--
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.KeyboardArrowDown,
+                                    contentDescription = "Minus One"
+                                )
+                            }
+                            TextField(
+                                value = stock.toString(),
+                                onValueChange = {},
+                                label = { Text("Stock") },
+                                enabled = false,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = {
                                 val newHistory = History(
                                     medicineName = medicine.name,
                                     userId = userId,
                                     date = Date().toString(),
-                                    details = "Decreased stock to ${stock - 1}",
+                                    details = "Increased stock to ${stock + 1}",
                                     userEmail = userEmail
                                 )
                                 val updatedMedicine = medicine.copy(
-                                    stock = stock - 1,
+                                    stock = stock + 1,
                                     histories = medicine.histories + newHistory
                                 )
                                 viewModel.updateMedicine(updatedMedicine)
-                                stock--
+                                stock++
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowUp,
+                                    contentDescription = "Plus One"
+                                )
                             }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.KeyboardArrowDown,
-                                contentDescription = "Minus One"
-                            )
                         }
-                        TextField(
-                            value = stock.toString(),
-                            onValueChange = {},
-                            label = { Text("Stock") },
-                            enabled = false,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(onClick = {
-                            val newHistory = History(
-                                medicineName = medicine.name,
-                                userId = userId,
-                                date = Date().toString(),
-                                details = "Increased stock to ${stock + 1}",
-                                userEmail = userEmail
-                            )
-                            val updatedMedicine = medicine.copy(
-                                stock = stock + 1,
-                                histories = medicine.histories + newHistory
-                            )
-                            viewModel.updateMedicine(updatedMedicine)
-                            stock++
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowUp,
-                                contentDescription = "Plus One"
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = "History", style = MaterialTheme.typography.titleLarge)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(medicine.histories) { history ->
-                            HistoryItem(history = history)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = "History", style = MaterialTheme.typography.titleLarge)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(medicine.histories) { history ->
+                                HistoryItem(history = history)
+                            }
                         }
                     }
                 }
@@ -227,7 +233,6 @@ fun MedicineDetailScreen(
         }
     }
 }
-
 @Composable
 fun HistoryItem(history: History) {
     Card(
