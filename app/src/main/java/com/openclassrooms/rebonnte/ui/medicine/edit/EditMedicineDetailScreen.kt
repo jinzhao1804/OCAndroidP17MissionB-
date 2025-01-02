@@ -1,40 +1,60 @@
-package com.openclassrooms.rebonnte.ui.medicine.edit
+package com.openclassrooms.rebonnte.ui.medicine
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import com.openclassrooms.rebonnte.domain.model.Aisle
+import com.openclassrooms.rebonnte.domain.model.History
 import com.openclassrooms.rebonnte.domain.model.Medicine
+import com.openclassrooms.rebonnte.domain.model.User
+import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
+import java.util.Date
 
 @Composable
 fun EditMedicineDetailScreen(
     medicine: Medicine,
+    viewModel: MedicineViewModel,
     onSave: (Medicine) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var editedName by remember { mutableStateOf(medicine.name) }
     var editedStock by remember { mutableStateOf(medicine.stock.toString()) }
     var editedAisle by remember { mutableStateOf(medicine.nameAisle.name) }
+
+    var userId by remember { mutableStateOf("unknown") }
+    var userEmail by remember { mutableStateOf("unknown") }
+
+    // Fetch user data from Firestore
+    LaunchedEffect(Unit) {
+        val db = Firebase.firestore
+
+        db.collection("users")
+            .get()
+            .addOnSuccessListener { result ->
+                for (document in result) {
+                    println("Document ID: ${document.id}, Data: ${document.data}")
+                    val user = document.toObject(User::class.java)
+                    userId = document.id
+                    userEmail = user.email
+                    println("User: ${user.name}, Email: ${user.email}")
+                }
+            }
+            .addOnFailureListener { exception ->
+                println("Error fetching users: ${exception.message}")
+            }
+    }
 
     Scaffold { paddingValues ->
         Column(
@@ -79,7 +99,7 @@ fun EditMedicineDetailScreen(
                 TextField(
                     value = editedStock,
                     onValueChange = { newValue ->
-                        if (newValue.isEmpty() || newValue.toIntOrNull() != null) {
+                        if (newValue.isEmpty() || newValue.toIntOrNull()?.let { it >= 0 } == true) {
                             editedStock = newValue
                         }
                     },
@@ -101,11 +121,15 @@ fun EditMedicineDetailScreen(
             // Save Button
             Button(
                 onClick = {
-                    val updatedMedicine = medicine.copy(
-                        name = editedName,
-                        stock = editedStock.toIntOrNull() ?: 0,
-                        nameAisle = Aisle(editedAisle)
+                    val updatedMedicine = createUpdatedMedicine(
+                        medicine,
+                        editedName,
+                        editedStock,
+                        editedAisle,
+                        userId,
+                        userEmail
                     )
+                    viewModel.updateMedicine(updatedMedicine)
                     onSave(updatedMedicine)
                 },
                 modifier = Modifier
@@ -116,4 +140,26 @@ fun EditMedicineDetailScreen(
             }
         }
     }
+}
+
+private fun createUpdatedMedicine(
+    medicine: Medicine,
+    editedName: String,
+    editedStock: String,
+    editedAisle: String,
+    userId: String,
+    userEmail: String
+): Medicine {
+    return medicine.copy(
+        name = editedName,
+        stock = editedStock.toIntOrNull() ?: 0,
+        nameAisle = Aisle(editedAisle),
+        histories = medicine.histories + History(
+            medicineName = medicine.name,
+            userId = userId,
+            date = Date().toString(),
+            details = "Changed stock to $editedStock, changed name to $editedName.",
+            userEmail = userEmail
+        )
+    )
 }

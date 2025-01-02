@@ -1,9 +1,11 @@
 package com.openclassrooms.rebonnte.data
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.openclassrooms.rebonnte.domain.model.Aisle
 import com.openclassrooms.rebonnte.domain.model.History
 import com.openclassrooms.rebonnte.domain.model.Medicine
+import com.openclassrooms.rebonnte.domain.model.User
 import kotlinx.coroutines.tasks.await
 
 class MedicineRepository {
@@ -73,10 +75,22 @@ class MedicineRepository {
      * Fetches all medicines from Firestore.
      * @return List of Medicine objects.
      */
+    val firebaseAuth = FirebaseAuth.getInstance()
+
+    // Function to get the current user's email
+    fun getCurrentUserEmail(): String? {
+        val currentUser = firebaseAuth.currentUser
+        return currentUser?.email
+    }
+
+    // getAllMedicines function without parameters
     suspend fun getAllMedicines(): List<Medicine> {
+        // Get the current user's email
+        val userEmail = getCurrentUserEmail()
+
         return try {
             // Query the "medicines" collection
-            val querySnapshot = medicinesCollection.get().await()
+            val querySnapshot = firestore.collection("medicines").get().await()
             println("Firestore query successful. Documents: ${querySnapshot.documents.size}") // Debugging
 
             // Map Firestore documents to Medicine objects
@@ -102,7 +116,8 @@ class MedicineRepository {
                             medicineName = historyMap["medicineName"] as? String ?: "",
                             userId = historyMap["userId"] as? String ?: "",
                             date = historyMap["date"] as? String ?: "",
-                            details = historyMap["details"] as? String ?: ""
+                            details = historyMap["details"] as? String ?: "",
+                            userEmail = userEmail ?: "Unknown Email" // Use the retrieved userEmail
                         )
                     }
                 )
@@ -114,7 +129,6 @@ class MedicineRepository {
             emptyList()
         }
     }
-
     /**
      * Updates an existing medicine in Firestore.
      * @param medicine The updated medicine object.

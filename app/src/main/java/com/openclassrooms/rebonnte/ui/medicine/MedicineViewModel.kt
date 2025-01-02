@@ -2,6 +2,8 @@ package com.openclassrooms.rebonnte.ui.medicine
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.openclassrooms.rebonnte.data.MedicineRepository
 import com.openclassrooms.rebonnte.domain.model.Aisle
 import com.openclassrooms.rebonnte.domain.model.Medicine
@@ -14,6 +16,8 @@ class MedicineViewModel : ViewModel() {
     var _medicines = MutableStateFlow<MutableList<Medicine>>(mutableListOf())
     val medicines: StateFlow<List<Medicine>> get() = _medicines
     val repository = MedicineRepository()
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
+
 
     init {
         getAllMedicines()
@@ -31,6 +35,8 @@ class MedicineViewModel : ViewModel() {
             }
         }
     }
+
+
 
     fun addNewMedecine(name: String, stock: Int, nameAisle: Aisle) {
 

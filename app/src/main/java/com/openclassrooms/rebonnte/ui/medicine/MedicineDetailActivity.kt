@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,9 +39,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 import com.openclassrooms.rebonnte.MainActivity
 import com.openclassrooms.rebonnte.domain.model.History
-import com.openclassrooms.rebonnte.ui.medicine.edit.EditMedicineDetailScreen
+import com.openclassrooms.rebonnte.domain.model.User
+import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import java.util.Date
 
@@ -71,6 +75,29 @@ fun MedicineDetailScreen(
     var stock by remember { mutableStateOf(medicine.stock) }
     var isEditing by remember { mutableStateOf(false) } // State to toggle edit mode
 
+    var userId by remember { mutableStateOf("unknown") }
+    var userEmail by remember { mutableStateOf("unknown") }
+
+    // Fetch user data from Firestore
+    LaunchedEffect(Unit) {
+        val db = Firebase.firestore
+
+        db.collection("users")
+            .get()
+            .addOnSuccessListener { result ->
+                for (document in result) {
+                    println("Document ID: ${document.id}, Data: ${document.data}")
+                    val user = document.toObject(User::class.java)
+                    userId = document.id
+                    userEmail = user.email
+                    println("User: ${user.name}, Email: ${user.email}")
+                }
+            }
+            .addOnFailureListener { exception ->
+                println("Error fetching users: ${exception.message}")
+            }
+    }
+
     Scaffold { paddingValues ->
         Column(
             modifier = Modifier
@@ -81,6 +108,7 @@ fun MedicineDetailScreen(
                 // Show Edit Screen
                 EditMedicineDetailScreen(
                     medicine = medicine,
+                    viewModel= MedicineViewModel(),
                     onSave = { updatedMedicine ->
                         viewModel.updateMedicine(updatedMedicine)
                         isEditing = false // Exit edit mode after saving
@@ -135,14 +163,18 @@ fun MedicineDetailScreen(
                     ) {
                         IconButton(onClick = {
                             if (stock > 0) {
-                                medicines[medicines.size].histories.toMutableList().add(
-                                    History(
-                                        medicine.name,
-                                        "efeza56f1e65f",
-                                        Date().toString(),
-                                        "Updated medicine details"
-                                    )
+                                val newHistory = History(
+                                    medicineName = medicine.name,
+                                    userId = userId,
+                                    date = Date().toString(),
+                                    details = "Decreased stock to ${stock - 1}",
+                                    userEmail = userEmail
                                 )
+                                val updatedMedicine = medicine.copy(
+                                    stock = stock - 1,
+                                    histories = medicine.histories + newHistory
+                                )
+                                viewModel.updateMedicine(updatedMedicine)
                                 stock--
                             }
                         }) {
@@ -159,14 +191,18 @@ fun MedicineDetailScreen(
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = {
-                            medicines[medicines.size].histories.toMutableList().add(
-                                History(
-                                    medicine.name,
-                                    "efeza56f1e65f",
-                                    Date().toString(),
-                                    "Updated medicine details"
-                                )
+                            val newHistory = History(
+                                medicineName = medicine.name,
+                                userId = userId,
+                                date = Date().toString(),
+                                details = "Increased stock to ${stock + 1}",
+                                userEmail = userEmail
                             )
+                            val updatedMedicine = medicine.copy(
+                                stock = stock + 1,
+                                histories = medicine.histories + newHistory
+                            )
+                            viewModel.updateMedicine(updatedMedicine)
                             stock++
                         }) {
                             Icon(
@@ -202,6 +238,7 @@ fun HistoryItem(history: History) {
             Text(text = "User: ${history.userId}")
             Text(text = "Date: ${history.date}")
             Text(text = "Details: ${history.details}")
+            Text(text = "Email: ${history.userEmail}")
         }
     }
 }
